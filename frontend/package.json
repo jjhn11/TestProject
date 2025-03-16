@@ -6,14 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "server": "json-server --watch src/tasks.json --port 8001"
+    "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.8.3",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
-    "json-server": "^1.0.0-beta.3",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "vuex": "^4.1.0"

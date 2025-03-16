@@ -40,9 +40,9 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'backend' });
 });
 
-app.get('/api/items', async (req, res) => {
+app.get('/api/tasks', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM items');
+    const [rows] = await pool.query('SELECT * FROM tasks');
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -50,15 +50,15 @@ app.get('/api/items', async (req, res) => {
   }
 });
 
-app.post('/api/items', async (req, res) => {
+app.post('/api/tasks', async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, completed } = req.body;
     const [result] = await pool.query(
-      'INSERT INTO items (name, description) VALUES (?, ?)',
-      [name, description]
+      'INSERT INTO tasks (name, description, completed) VALUES (?, ?, ?)',
+      [name, description, completed]
     );
     
-    const [rows] = await pool.query('SELECT * FROM items WHERE id = ?', [result.insertId]);
+    const [rows] = await pool.query('SELECT * FROM tasks WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);
@@ -68,5 +68,5 @@ app.post('/api/items', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server ajajaja on port ${PORT}`);
 });

@@ -1,24 +1,22 @@
 <script setup>
-import { reactive } from 'vue'
-import { onMounted } from 'vue';
-import axios from 'axios'
+import { reactive } from 'vue';
+import axios from 'axios';
 
 const form = reactive({
-    // id: Number,
     taskTitle: '',
-    // completed: false,
+    taskDescription: ''
 });
 
 const handleSubmit = async () => {
     const newTask = { 
-        id: Math.floor(Math.random() * 1000),
-        titulo: form.taskTitle,
-        completado: false   
+        name: form.taskTitle,
+        description: form.taskDescription,
+        completed: false   
      };
     try {
-        const response = await axios.post('http://localhost:8001/tasks', newTask);
+        const response = await axios.post('http://localhost:3000/api/tasks', newTask);
         form.taskTitle = '';
-        
+        form.taskDescription = '';
     } catch (error) {
         console.error(error);
     }
@@ -32,6 +30,10 @@ const handleSubmit = async () => {
             <div class="mb-3">
                 <label for="taskTitle" class="form-label">Task Title</label>
                 <input type="text" class="form-control" id="taskTitle" v-model="form.taskTitle" required>
+            </div>
+            <div class="mb-3">
+                <label for="taskDescription" class="form-label">Task Description</label>
+                <textarea class="form-control" id="taskDescription" v-model="form.taskDescription" required></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Add Task</button>
         </form>

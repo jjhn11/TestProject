@@ -1,7 +1,7 @@
 <script setup>
 import Task from './Task.vue';
 import { ref, defineProps, onMounted } from 'vue';
-import axios from 'axios'
+import axios from 'axios';
 
 const props = defineProps({
     limit: Number
@@ -11,7 +11,7 @@ const tasks = ref([]);
 
 onMounted(async () => {
     try {
-        const response = await axios.get('http://localhost:8001/tasks');
+        const response = await axios.get('http://localhost:3000/api/tasks');
         tasks.value = response.data.slice(0, props.limit);
     } catch (error) {
         console.error(error);
@@ -21,7 +21,7 @@ onMounted(async () => {
 
 <template>
     <div class="container mt-4">
-        <h1 class="text-center mb-4">Tasks List</h1>
+        <h1 class="text-center mb-4">Tasks</h1>
         <ul class="list-group">
             <Task v-for="task in tasks" :key="task.id" :task="task" />
         </ul>
