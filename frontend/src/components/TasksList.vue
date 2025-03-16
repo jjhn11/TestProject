@@ -21,7 +21,7 @@ onMounted(async () => {
 
 <template>
     <div class="container mt-4">
-        <h1 class="text-center mb-4">Tasks</h1>
+        <h1 class="text-center mb-4">Tasks e</h1>
         <ul class="list-group">
             <Task v-for="task in tasks" :key="task.id" :task="task" />
         </ul>
