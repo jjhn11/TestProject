@@ -1,15 +1,16 @@
-FROM node:16-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
 COPY package*.json ./
 COPY nodemon.json ./
 
-RUN npm install
+# Ensure nodemon is installed globally to avoid any path issues
+RUN npm install && npm install -g nodemon
 
 COPY . .
 
 EXPOSE 3000
 
-# Use nodemon with the custom config for hot reloading
-CMD ["npx", "nodemon", "--config", "nodemon.json", "src/index.js"]
+# Use the global nodemon for reliability
+CMD ["nodemon", "--config", "nodemon.json", "src/index.js"]

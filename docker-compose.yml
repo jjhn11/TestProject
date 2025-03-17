@@ -22,6 +22,8 @@ services:
       - DB_USER=root
       - DB_PASSWORD=rootpassword
       - DB_NAME=mydb
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -30,7 +32,6 @@ services:
     networks:
       - app-network
     restart: always
-
   db:
     image: mysql:8.0
     ports:
