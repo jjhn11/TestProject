@@ -8,40 +8,59 @@ const props = defineProps({
 });
 
 const tasks = ref([]);
+const loading = ref(true);
+const error = ref(null);
+const retryCount = ref(0);
 
-onMounted(async () => {
+async function loadTasks() {
+    loading.value = true;
+    error.value = null;
+    
     try {
         const response = await axios.get('http://localhost:3000/api/tasks');
         tasks.value = response.data.slice(0, props.limit);
-    } catch (error) {
-        console.error(error);
+        loading.value = false;
+    } catch (err) {
+        console.error(err);
+        error.value = "Failed to load tasks. Retrying...";
+        
+        // Retry up to 3 times with increasing delays
+        if (retryCount.value < 3) {
+            retryCount.value++;
+            const delay = retryCount.value * 2000; // Increase delay each time
+            setTimeout(loadTasks, delay);
+        } else {
+            error.value = "Failed to load tasks. Please refresh the page.";
+            loading.value = false;
+        }
     }
+}
+
+onMounted(() => {
+    loadTasks();
 });
 </script>
 
 <template>
     <div class="container mt-4">
-        <h1 class="text-center mb-4">Tasks e</h1>
-        <ul class="list-group">
+        <h1 class="text-center mb-4">Tasks</h1>
+        
+        <div v-if="loading" class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading tasks...</p>
+        </div>
+        
+        <div v-else-if="error" class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        
+        <ul v-else class="list-group">
             <Task v-for="task in tasks" :key="task.id" :task="task" />
+            <li v-if="tasks.length === 0" class="list-group-item text-center">
+                No tasks found.
+            </li>
         </ul>
     </div>
 </template>
-
-<style scoped>
-.container {
-    max-width: 600px;
-    margin: auto;
-}
-
-h1 {
-    font-size: 2.5rem;
-    color: #343a40;
-}
-
-.list-group {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
-}
-</style>

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 // Create express app
 const app = express();
@@ -21,25 +22,41 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Test database connection
-async function testDbConnection() {
-  try {
-    const connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT NOW() as now');
-    console.log('Database connected:', rows[0].now);
-    connection.release();
-  } catch (err) {
-    console.error('Database connection error:', err);
+// Enhanced database connection with retry logic
+async function connectWithRetry(maxAttempts = 10, delay = 5000) {
+  let attempts = 0;
+  
+  console.log('Starting database connection attempts...');
+  
+  while (attempts < maxAttempts) {
+    try {
+      console.log(`Attempt ${attempts + 1}/${maxAttempts} to connect to database...`);
+      const connection = await pool.getConnection();
+      const [rows] = await connection.query('SELECT NOW() as now');
+      console.log('Database connected:', rows[0].now);
+      connection.release();
+      return true;
+    } catch (err) {
+      attempts++;
+      console.log(`Database connection attempt ${attempts}/${maxAttempts} failed:`, err.message);
+      
+      if (attempts >= maxAttempts) {
+        console.error('Max connection attempts reached. Giving up.');
+        return false;
+      }
+      
+      console.log(`Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 }
 
-testDbConnection();
-
-// Routes
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'backend' });
 });
 
+// Get all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM tasks');
@@ -50,6 +67,7 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
+// Create a new task
 app.post('/api/tasks', async (req, res) => {
   try {
     const { name, description, completed } = req.body;
@@ -66,7 +84,71 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Update a task
+app.put('/api/tasks/:id', async (req, res) => {
+  try {
+    const { name, description, completed } = req.body;
+    const taskId = req.params.id;
+    
+    const [result] = await pool.query(
+      'UPDATE tasks SET name = ?, description = ?, completed = ? WHERE id = ?',
+      [name, description, completed, taskId]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    const [rows] = await pool.query('SELECT * FROM tasks WHERE id = ?', [taskId]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete a task
+app.delete('/api/tasks/:id', async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const [result] = await pool.query('DELETE FROM tasks WHERE id = ?', [taskId]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    res.json({ message: 'Task deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Start server after ensuring database connection
+async function startServer() {
+  console.log('Starting server initialization...');
+  
+  // Start Express listener first, but don't announce ready until DB is connected
+  const server = app.listen(PORT, () => {
+    console.log(`Server process running on port ${PORT}, waiting for database...`);
+  });
+  
+  // Try to connect to database
+  const connected = await connectWithRetry();
+  console.log('Database connection result:', connected);
+  
+  if (!connected) {
+    console.error('Failed to connect to database after maximum retries. Shutting down.');
+    server.close();
+    process.exit(1);
+  }
+  
+  console.log(`Server fully initialized and ready for connections on port ${PORT}`);
+}
+
+// Initialize the server with better error handling
+console.log('Initializing application...');
+startServer().catch(err => {
+  console.error('Fatal error during startup:', err);
+  process.exit(1);
 });
